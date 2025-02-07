@@ -1,0 +1,17 @@
+{
+  "name": "roq/bridge/client/flags/Flags",
+  "type": "flags",
+  "values": [
+    {
+      "name": "client_listen_address",
+      "type": "std/string",
+      "required": true,
+      "description": "Listen address"
+    },
+    {
+      "name": "url_prefix",
+      "type": "std/string",
+      "description": "URL prefix"
+    }
+  ]
+}
