@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include <span>
+#include <string_view>
+
 #include "roq/bridge/client/config.hpp"
 #include "roq/bridge/client/settings.hpp"
 
@@ -10,11 +13,13 @@ namespace bridge {
 namespace client {
 
 struct Shared final {
-  Shared(Settings const &, Config const &);
+  Shared(Settings const &, Config const &, std::span<std::string_view const> const &params);
 
   Shared(Shared const &) = delete;
 
   Settings const &settings;
+  Config const &config;
+  std::span<std::string_view const> const &params;
 };
 
 }  // namespace client

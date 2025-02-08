@@ -6,6 +6,8 @@
 
 #include "roq/io/network_address.hpp"
 
+#include "roq/io/sys/scheduler.hpp"
+
 using namespace std::literals;
 using namespace std::chrono_literals;
 
@@ -16,6 +18,9 @@ namespace client {
 // === CONSTANTS ===
 
 namespace {
+size_t const DISPATCH_THIS_MANY_BEFORE_CHECKING_CLOCK = 1000;
+auto const YIELD_FREQUENCY = 1000ms;
+auto const TIMER_FREQUENCY = 100ms;
 auto const HEARTBEAT_FREQUENCY = 5s;
 auto const CLEANUP_FREQUENCY = 1s;
 }  // namespace
@@ -24,7 +29,7 @@ auto const CLEANUP_FREQUENCY = 1s;
 
 namespace {
 auto create_timer(auto &handler, auto &context) {
-  return context.create_timer(handler, 100ms);
+  return context.create_timer(handler, TIMER_FREQUENCY);
 }
 
 auto create_tcp_listener(auto &handler, auto &settings, auto &context) {
@@ -36,21 +41,37 @@ auto create_tcp_listener(auto &handler, auto &settings, auto &context) {
 // === IMPLEMENTATION ===
 
 Controller::Controller(Settings const &settings, Config const &config, io::Context &context, std::span<std::string_view const> const &params)
-    : settings_{settings}, shared_{settings, config}, context_{context}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
+    : settings_{settings}, shared_{settings, config, params}, context_{context}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
       interrupt_{context.create_signal(*this, io::sys::Signal::Type::INTERRUPT)}, timer_{create_timer(*this, context_)},
       listener_{create_tcp_listener(*this, settings, context_)} {
 }
 
 void Controller::dispatch() {
   (*timer_).resume();
-  context_.dispatch();
+  std::chrono::nanoseconds next_yield = {};
+  while (!stop_) {
+    // yield?
+    if (YIELD_FREQUENCY.count() > 0) {
+      auto now = clock::get_system();
+      if (next_yield < now) [[unlikely]] {
+        next_yield = now + YIELD_FREQUENCY;
+        io::sys::Scheduler::yield();
+      }
+    }
+    // drain shared memory (note! we expect this to be more frequent than i/o)
+    for (size_t i = 0; i < DISPATCH_THIS_MANY_BEFORE_CHECKING_CLOCK; ++i)
+      for (auto &[_, session] : sessions_)
+        (*session).dispatch();
+    // drain i/o
+    context_.drain();
+  }
 }
 
 // io::sys::Signal::Handler
 
 void Controller::operator()(io::sys::Signal::Event const &event) {
   log::warn("*** SIGNAL: {} ***"sv, event.type);
-  context_.stop();
+  stop_ = true;
 }
 
 // io::sys::Timer
@@ -93,7 +114,7 @@ void Controller::operator()(Session::Disconnect const &disconnect) {
 // utils
 
 void Controller::create_session(io::net::tcp::Connection::Factory &factory, uint64_t session_id) {
-  auto session = std::make_unique<Session>(*this, settings_, factory, session_id);
+  auto session = std::make_unique<Session>(*this, shared_, context_, factory, session_id);
   sessions_.try_emplace(session_id, std::move(session));
 }
 

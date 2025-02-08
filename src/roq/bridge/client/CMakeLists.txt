@@ -4,6 +4,7 @@ add_subdirectory(flags)
 
 set(SOURCES
     application.cpp
+    bridge.cpp
     config.cpp
     controller.cpp
     session.cpp
@@ -26,6 +27,7 @@ target_link_libraries(
           roq-flags::roq-flags
           roq-web::roq-web
           roq-io::roq-io
+          roq-codec::roq-codec
           roq-logging::roq-logging
           roq-logging::roq-logging-flags
           fmt::fmt

@@ -14,7 +14,8 @@ namespace {}  // namespace
 
 // === IMPLEMENTATION ===
 
-Shared::Shared(Settings const &settings, Config const &config) : settings{settings} {
+Shared::Shared(Settings const &settings, Config const &config, std::span<std::string_view const> const &params)
+    : settings{settings}, config{config}, params{params} {
 }
 
 }  // namespace client

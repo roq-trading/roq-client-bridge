@@ -62,6 +62,8 @@ struct Controller final : public Session::Handler, public io::sys::Signal::Handl
   std::unique_ptr<io::sys::Signal> const interrupt_;
   std::unique_ptr<io::sys::Timer> const timer_;
   std::unique_ptr<io::net::tcp::Listener> const listener_;
+  // control
+  bool stop_ = {};
   // sessions
   uint64_t next_session_id_ = {};
   utils::unordered_map<uint64_t, std::unique_ptr<Session>> sessions_;
