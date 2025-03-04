@@ -13,7 +13,7 @@ namespace client {
 Config::Config(Settings const &settings) : settings_{settings} {
 }
 
-void Config::dispatch(Handler &handler) const {
+void Config::dispatch(Handler &) const {
   /*
   // settings
   handler(client::Settings{
