@@ -54,7 +54,6 @@ struct Controller final : public Session::Handler, public io::sys::Signal::Handl
   void remove_zombies();
 
  private:
-  Settings const &settings_;
   Shared shared_;
   // io
   io::Context &context_;

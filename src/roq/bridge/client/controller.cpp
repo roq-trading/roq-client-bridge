@@ -41,7 +41,7 @@ auto create_tcp_listener(auto &handler, auto &settings, auto &context) {
 // === IMPLEMENTATION ===
 
 Controller::Controller(Settings const &settings, Config const &config, io::Context &context, std::span<std::string_view const> const &params)
-    : settings_{settings}, shared_{settings, config, params}, context_{context}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
+    : shared_{settings, config, params}, context_{context}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
       interrupt_{context.create_signal(*this, io::sys::Signal::Type::INTERRUPT)}, timer_{create_timer(*this, context_)},
       listener_{create_tcp_listener(*this, settings, context_)} {
 }
