@@ -163,8 +163,9 @@ void Session::operator()(State state) {
 
 void Session::check_upgrade(web::rest::Server::Request const &request) {
   Query query{request};
-  if (std::empty(query.codec))
+  if (std::empty(query.codec)) {
     throw RuntimeError{"Unexpected: missing 'codec' (query param)"sv};
+  }
   auto type = utils::parse_enum<codec::Type>(query.codec);
   // XXX FIXME TODO we need subscriptions communicated before this... only then do we create the Config
   assert(!bridge_);

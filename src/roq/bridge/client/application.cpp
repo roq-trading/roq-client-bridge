@@ -20,8 +20,9 @@ namespace client {
 
 int Application::main(args::Parser const &args) {
   auto params = args.params();
-  if (std::empty(params))
+  if (std::empty(params)) {
     log::fatal("Expected arguments"sv);
+  }
   Settings settings{args};
   log::info("settings={}"sv, settings);
   Config config{settings};

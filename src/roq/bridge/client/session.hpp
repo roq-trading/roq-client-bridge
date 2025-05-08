@@ -32,8 +32,9 @@ struct Session final : public web::rest::Server::Handler, public Bridge::Handler
   Session(Session const &) = delete;
 
   inline void dispatch() {
-    if (bridge_)
+    if (bridge_) {
       (*bridge_).dispatch();
+    }
   }
 
   void ping(std::chrono::nanoseconds now);
