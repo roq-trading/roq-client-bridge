@@ -2,17 +2,6 @@
 
 KERNEL="$(uname -a)"
 
-case "$KERNEL" in
-  Linux*)
-    LOCAL_INTERFACE=$(ip route get 8.8.8.8 | sed -n 's/.*src \([^\ ]*\).*/\1/p')
-    ;;
-  Darwin*)
-    LOCAL_INTERFACE=$(osascript -e "IPv4 address of (system info)")
-    ;;
-  *)
-    (>&2 echo -e "\033[1;31mERROR: Unknown architecture.\033[0m") && exit 1
-esac
-
 if [ "$1" == "debug" ]; then
   case "$KERNEL" in
     Linux*)
@@ -29,5 +18,5 @@ fi
 
 $PREFIX "./roq-client-bridge" \
   --name "bridge" \
-  --client_listen_address "tcp://$LOCAL_INTERFACE:1234" \
+  --client_listen_address "tcp://localhost:1234" \
   $@

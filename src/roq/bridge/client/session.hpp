@@ -18,7 +18,7 @@ namespace roq {
 namespace bridge {
 namespace client {
 
-struct Session final : public web::rest::Server::Handler, public Bridge::Handler {
+struct Session final : public web::rest::Server::Handler, public Bridge::Handler, roq::client::Config {
   struct Disconnect final {
     uint64_t session_id = {};
   };
@@ -51,8 +51,14 @@ struct Session final : public web::rest::Server::Handler, public Bridge::Handler
 
   // Bridge::Handler
 
+  void operator()(Bridge::Start const &) override;
+  void operator()(Bridge::Stop const &) override;
   void operator()(Bridge::Text const &) override;
   void operator()(Bridge::Binary const &) override;
+
+  // client::Config
+
+  void dispatch(roq::client::Config::Handler &) const override;
 
   // utils
 

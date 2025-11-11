@@ -15,8 +15,10 @@ namespace {}  // namespace
 // === HELPERS ===
 
 namespace {
-auto create_poller(auto &settings, auto &config, auto &context, auto &params) {
-  return roq::client::Poller::create(settings, config, context, params);
+auto create_poller(auto &settings, auto &config, auto &context, auto &params, auto &user) {
+  auto settings_2 = settings;
+  settings_2.app.name = user;
+  return roq::client::Poller::create(settings_2, config, context, params);
 }
 
 auto create_encoder(auto type) {
@@ -85,8 +87,18 @@ struct Bridge2 final : public codec::Decoder::Handler {
 // === IMPLEMENTATION ===
 
 Bridge::Bridge(
-    Handler &handler, Settings const &settings, Config const &config, io::Context &context, std::span<std::string_view const> const &params, codec::Type type)
-    : handler_{handler}, client_{create_poller(settings, config, context, params)}, encoder_{create_encoder(type)}, decoder_{create_decoder(type)} {
+    Handler &handler,
+    Settings const &settings,
+    roq::client::Config const &config,
+    io::Context &context,
+    std::span<std::string_view const> const &params,
+    std::string_view const &user,
+    codec::Type type)
+    : handler_{handler}, client_{create_poller(settings, config, context, params, user)}, encoder_{create_encoder(type)}, decoder_{create_decoder(type)} {
+}
+
+void Bridge::stop() {
+  (*client_).stop();
 }
 
 void Bridge::dispatch(std::string_view const &message) {
@@ -98,6 +110,16 @@ void Bridge::dispatch(std::span<std::byte const> const &message) {
 }
 
 // roq::client::Poller::Handler
+
+void Bridge::operator()(Event<roq::Start> const &) {
+  Start start;
+  handler_(start);
+}
+
+void Bridge::operator()(Event<roq::Stop> const &) {
+  Stop stop;
+  handler_(stop);
+}
 
 void Bridge::operator()(Event<Ready> const &event) {
   encode(event);

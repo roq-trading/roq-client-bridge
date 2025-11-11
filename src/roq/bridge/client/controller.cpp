@@ -22,7 +22,7 @@ size_t const DISPATCH_THIS_MANY_BEFORE_CHECKING_CLOCK = 1000;
 auto const YIELD_FREQUENCY = 1000ms;
 auto const TIMER_FREQUENCY = 100ms;
 auto const HEARTBEAT_FREQUENCY = 5s;
-auto const CLEANUP_FREQUENCY = 1s;
+auto const CLEANUP_FREQUENCY = 10s;
 }  // namespace
 
 // === HELPERS ===

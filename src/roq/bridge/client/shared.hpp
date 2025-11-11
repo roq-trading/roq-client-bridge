@@ -5,6 +5,8 @@
 #include <span>
 #include <string_view>
 
+#include "roq/client/config.hpp"
+
 #include "roq/bridge/client/config.hpp"
 #include "roq/bridge/client/settings.hpp"
 
@@ -18,7 +20,7 @@ struct Shared final {
   Shared(Shared const &) = delete;
 
   Settings const &settings;
-  Config const &config;
+  roq::client::Config const &config;
   std::span<std::string_view const> const &params;
 };
 

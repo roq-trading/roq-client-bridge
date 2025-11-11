@@ -46,11 +46,15 @@ auto create_server(auto &handler, auto &settings, auto &factory) {
 struct Query final {
   explicit Query(web::rest::Server::Request const &request) {
     enum class Key {
+      USER,
       CODEC,
     };
     for (auto &[k, v] : request.query) {
       auto key = utils::parse_enum<Key>(k);
       switch (key) {
+        case Key::USER:
+          user = v;
+          break;
         case Key::CODEC:
           codec = v;
           break;
@@ -58,6 +62,7 @@ struct Query final {
     }
   }
 
+  std::string_view user;
   std::string_view codec;
 };
 }  // namespace
@@ -115,6 +120,7 @@ void Session::operator()(web::rest::Server::Text const &text) {
   switch (state_) {
     using enum State;
     case CONNECTED:
+      log::info("HERE"sv);
       disconnect();
       break;
     case READY:
@@ -132,6 +138,7 @@ void Session::operator()(web::rest::Server::Binary const &binary) {
   switch (state_) {
     using enum State;
     case CONNECTED:
+      log::info("HERE"sv);
       disconnect();
       break;
     case READY:
@@ -145,12 +152,26 @@ void Session::operator()(web::rest::Server::Binary const &binary) {
 
 // Bridge::Handler
 
+void Session::operator()(Bridge::Start const &) {
+  log::info("[{}] start"sv, session_id_);
+}
+
+void Session::operator()(Bridge::Stop const &) {
+  log::info("[{}] stop"sv, session_id_);
+}
+
 void Session::operator()(Bridge::Text const &text) {
   (*server_).send_text(text.payload);
 }
 
 void Session::operator()(Bridge::Binary const &binary) {
   (*server_).send_binary(binary.payload);
+}
+
+// client::Config
+
+void Session::dispatch(roq::client::Config::Handler &handler) const {
+  shared_.config.dispatch(handler);  // XXX FIXME TODO by-session
 }
 
 // utils
@@ -163,20 +184,26 @@ void Session::operator()(State state) {
 
 void Session::check_upgrade(web::rest::Server::Request const &request) {
   Query query{request};
+  if (std::empty(query.user)) {
+    throw RuntimeError{"Unexpected: missing 'user' (query param)"sv};
+  }
   if (std::empty(query.codec)) {
     throw RuntimeError{"Unexpected: missing 'codec' (query param)"sv};
   }
   auto type = utils::parse_enum<codec::Type>(query.codec);
   // XXX FIXME TODO we need subscriptions communicated before this... only then do we create the Config
-  assert(!bridge_);
-  // XXX FIXME TODO singleton
-  bridge_ = std::make_unique<Bridge>(*this, shared_.settings, shared_.config, context_, shared_.params, type);
+  if (bridge_) {
+    throw RuntimeError{"Unexpected"sv};  // can't upgrade more than once (internal error?)
+  }
+  bridge_ = std::make_unique<Bridge>(*this, shared_.settings, shared_.config, context_, shared_.params, query.user, type);
 }
 
 void Session::disconnect() {
   auto helper = [&]() {
     (*this)(State::ZOMBIE);
-    bridge_.reset();
+    if (bridge_) {
+      (*bridge_).stop();
+    }
     auto disconnect = Disconnect{
         .session_id = session_id_,
     };

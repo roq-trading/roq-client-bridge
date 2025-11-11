@@ -22,6 +22,10 @@ namespace bridge {
 namespace client {
 
 struct Bridge final : public roq::client::Poller::Handler {
+  struct Start final {};
+
+  struct Stop final {};
+
   struct Text final {
     std::string_view payload;
   };
@@ -31,13 +35,24 @@ struct Bridge final : public roq::client::Poller::Handler {
   };
 
   struct Handler {
+    virtual void operator()(Start const &) = 0;
+    virtual void operator()(Stop const &) = 0;
     virtual void operator()(Text const &) = 0;
     virtual void operator()(Binary const &) = 0;
   };
 
-  Bridge(Handler &, Settings const &, Config const &, io::Context &, std::span<std::string_view const> const &params, codec::Type);
+  Bridge(
+      Handler &,
+      Settings const &,
+      roq::client::Config const &,
+      io::Context &,
+      std::span<std::string_view const> const &params,
+      std::string_view const &user,
+      codec::Type);
 
   Bridge(Bridge const &) = delete;
+
+  void stop();
 
   // client => websocket
   inline void dispatch() { (*client_).dispatch(*this); }
@@ -48,6 +63,9 @@ struct Bridge final : public roq::client::Poller::Handler {
 
  protected:
   // roq::client::Poller::Handler
+
+  void operator()(Event<roq::Start> const &) override;
+  void operator()(Event<roq::Stop> const &) override;
 
   void operator()(Event<Ready> const &) override;
 
