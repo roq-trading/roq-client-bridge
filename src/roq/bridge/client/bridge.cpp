@@ -55,6 +55,7 @@ struct Bridge2 final : public codec::Decoder::Handler {
   void operator()(Event<TradeSummary> const &) override {}
   void operator()(Event<StatisticsUpdate> const &) override {}
   void operator()(Event<TimeSeriesUpdate> const &) override {}
+  void operator()(Event<Subscribe> const &) override {}
   void operator()(Event<CreateOrder> const &event) override { dispatcher_.send(event.value, event.message_info.source, event.message_info.is_last); }
   void operator()(Event<ModifyOrder> const &) override {}
   void operator()(Event<CancelOrder> const &) override {}
