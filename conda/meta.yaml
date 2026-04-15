@@ -38,9 +38,9 @@ requirements:
     - roq-market
     - roq-oss-nameof
     - roq-oss-tomlplusplus
-    - roq-oss-unordered_dense
     - roq-utils
     - roq-web
+    - unordered_dense
   run:
     - benchmark
 
